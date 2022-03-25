@@ -12,8 +12,8 @@ function App() {
   const [allEvents, setAllEvents] = useState();
 
   const calendarManagerContractAddress =
-    "0xf5153286fd3E49Cc2c3bEc135162AD60fA31007f";
-  const eventsContractAddress = "0x39ad297674a97830779f924E6c6E2C5c1e35f48F";
+    "0xAF376C348f13741E19504207cCdE30504FFFD367";
+  const eventsContractAddress = "0x3391116508846B8970a81efB05b90971110A5346";
 
   const checkIfWalletIsConnected = async () => {
     try {
@@ -62,10 +62,20 @@ function App() {
     }
   };
 
+  const cleanEvent = (scEvent) => {
+    return {
+      start: new Date(scEvent.startDate.toNumber()),
+      end: new Date(scEvent.endDate.toNumber()),
+      invitees: scEvent.invites,
+      description: scEvent.description,
+      title: scEvent.description,
+      organizer: scEvent.organizer,
+      allDay: false,
+    }
+  }
+
   const getAllEvents = async () => {
     const { ethereum } = window;
-
-    console.log("getting events")
     try {
       if (ethereum) {
         const provider = new ethers.providers.Web3Provider(ethereum);
@@ -77,8 +87,7 @@ function App() {
         );
 
         const events = await eventsContract.getAllEvents();
-
-        console.log(events);
+        setAllEvents(events.map(ev => cleanEvent(ev)));
 
       } else {
         console.log("Ethereum object doesn't exist!");
@@ -96,7 +105,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">Calendar.ETH</header>
-      <CalendarETH></CalendarETH>
+      <CalendarETH events={allEvents}></CalendarETH>
     </div>
   );
 }

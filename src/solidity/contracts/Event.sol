@@ -1,10 +1,11 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
 
 contract Event is ERC721, Ownable {
 
@@ -21,33 +22,44 @@ contract Event is ERC721, Ownable {
     Counters.Counter private _tokenIds;
 
     mapping(uint256 => EventData) public eventsData;
-    
-    constructor() ERC721 ("calendar.eth", "CALETH") {}
 
-    function createEvent(uint256 startDate, uint256 endDate, address[] memory invites, string memory description, address organizer) public onlyOwner returns(uint256){
+    constructor() ERC721("calendar.eth", "CALETH") {}
+
+    function createEvent(
+        uint256 startDate,
+        uint256 endDate,
+        address[] memory invites,
+        string memory description,
+        address organizer
+    ) public onlyOwner returns (uint256) {
         uint256 newItemId = _tokenIds.current();
-        _safeMint(msg.sender, newItemId);
-        eventsData[newItemId] = EventData(startDate, endDate, invites, description, organizer);
+        _safeMint(msg.sender, newItemId);   
+        eventsData[newItemId] = EventData(
+            startDate,
+            endDate,
+            invites,
+            description,
+            organizer
+        );
         _tokenIds.increment();
         return newItemId;
     }
 
-    function cancelEvent(uint256 eventId) public onlyOwner returns(bool) {
+    function cancelEvent(uint256 eventId) public onlyOwner returns (bool) {
         delete eventsData[eventId];
         _burn(eventId);
         return true;
     }
 
-    function getEventData(uint256 id) public view returns(EventData memory){
+    function getEventData(uint256 id) public view returns (EventData memory) {
         return eventsData[id];
     }
 
-    function getAllEvents() public view returns(EventData[] memory) {
+    function getAllEvents() public view returns (EventData[] memory) {
         EventData[] memory events = new EventData[](_tokenIds.current());
         for (uint256 i; i < _tokenIds.current(); i++) {
             events[i] = eventsData[i];
         }
         return events;
     }
-
 }

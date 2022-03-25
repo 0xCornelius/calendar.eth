@@ -21,7 +21,10 @@ contract CalendarManager is IERC721Receiver {
     }
 
     modifier onlyEventOwner(uint256 eventId) {
-        require(eventContract.getEventData(eventId).organizer == msg.sender, "Only the owner can cancel an event");
+        require(
+            eventContract.getEventData(eventId).organizer == msg.sender,
+            "Only the owner can cancel an event"
+        );
         _;
     }
 
@@ -30,44 +33,62 @@ contract CalendarManager is IERC721Receiver {
         address,
         uint256,
         bytes calldata
-    ) external override pure returns (bytes4) {
+    ) external pure override returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
 
-    function createEvent(address[] memory invitees, uint256 startDate, uint256 endDate, string memory description) public returns(uint256) {
-        for (uint i; i < invitees.length; i++) {
-            if(!EnumerableSet.contains(allowances[invitees[i]], msg.sender)) {
+    function createEvent(
+        address[] memory invitees,
+        uint256 startDate,
+        uint256 endDate,
+        string memory description
+    ) public returns (uint256) {
+        for (uint256 i; i < invitees.length; i++) {
+            if (!EnumerableSet.contains(allowances[invitees[i]], msg.sender)) {
                 revert("Invitee did not approve");
             }
-        }        
-        uint256 eventId = eventContract.createEvent(startDate, endDate, invitees, description, msg.sender);
+        }
+        uint256 eventId = eventContract.createEvent(
+            startDate,
+            endDate,
+            invitees,
+            description,
+            msg.sender
+        );
         emit EventCreated(eventId);
         return eventId;
     }
 
-    function cancelEvent(uint256 eventId) public onlyEventOwner(eventId) returns(bool){
+    function cancelEvent(uint256 eventId)
+        public
+        onlyEventOwner(eventId)
+        returns (bool)
+    {
         bool canceled = eventContract.cancelEvent(eventId);
         emit EventCancelled(eventId);
         return canceled;
     }
 
-    function allowInvites(address from) public {    
+    function allowInvites(address from) public {
         EnumerableSet.add(allowances[msg.sender], from);
         emit InvitesAllowed(msg.sender, from);
-    }  
+    }
 
     function disableInvites(address from) public {
         EnumerableSet.remove(allowances[msg.sender], from);
-        emit InvitesDisabled(msg.sender, from);(msg.sender, from);
-    }  
+        emit InvitesDisabled(msg.sender, from);
+        (msg.sender, from);
+    }
 
-    function isInviteAllowed(address from) public view returns(bool) {
+    function isInviteAllowed(address from) public view returns (bool) {
         return EnumerableSet.contains(allowances[msg.sender], from);
     }
 
-    function isInviteAllowedBy(address by, address from) public view returns(bool) {
+    function isInviteAllowedBy(address by, address from)
+        public
+        view
+        returns (bool)
+    {
         return EnumerableSet.contains(allowances[by], from);
     }
-
-    
 }

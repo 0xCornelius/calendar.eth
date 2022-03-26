@@ -4,16 +4,34 @@ import CalendarETH from "./components/CalendarETH";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
-import calendarManagerABI from "./solidity/artifacts/contracts/CalendarManager.sol/CalendarManager.json";
-import eventsABI from "./solidity/artifacts/contracts/Event.sol/Event.json";
+import { calendarManager, events } from "./constants.js";
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState("");
   const [allEvents, setAllEvents] = useState();
 
-  const calendarManagerContractAddress =
-    "0xAF376C348f13741E19504207cCdE30504FFFD367";
-  const eventsContractAddress = "0x3391116508846B8970a81efB05b90971110A5346";
+  const signer = function () {
+    const { ethereum } = window;
+    if (ethereum) {
+      const provider = new ethers.providers.Web3Provider(ethereum);
+      return provider.getSigner();
+    } else {
+      console.log("Ethereum object doesn't exist!");
+    }
+  }()
+
+  const calendarManagerContract = new ethers.Contract(
+    calendarManager.address,
+    calendarManager.abi,
+    signer
+  );
+
+  const eventsContract = new ethers.Contract(
+    events.address,
+    events.abi,
+    signer
+  );
 
   const checkIfWalletIsConnected = async () => {
     try {
@@ -75,26 +93,8 @@ function App() {
   }
 
   const getAllEvents = async () => {
-    const { ethereum } = window;
-    try {
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const signer = provider.getSigner();
-        const eventsContract = new ethers.Contract(
-          eventsContractAddress,
-          eventsABI.abi,
-          signer
-        );
-
-        const events = await eventsContract.getAllEvents();
-        setAllEvents(events.map(ev => cleanEvent(ev)));
-
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (error) {
-      console.log(error);
-    }
+    const events = await eventsContract.getAllEvents();
+    setAllEvents(events.map(ev => cleanEvent(ev)));
   };
 
   useEffect(() => {
@@ -104,8 +104,11 @@ function App() {
 
   return (
     <div className="App">
-      <header className="App-header">Calendar.ETH</header>
-      <CalendarETH events={allEvents}></CalendarETH>
+      <header className="App-header"><span>Calendar.ETH</span><span>{signer.address}</span></header>
+      <CalendarETH
+        events={allEvents}
+        eventsContract={eventsContract}
+        calendarManagerContract={calendarManagerContract} />
     </div>
   );
 }

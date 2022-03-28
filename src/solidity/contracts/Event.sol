@@ -6,9 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-
 contract Event is ERC721, Ownable {
-
     struct EventData {
         //let date = (new Date()).getTime();
         uint256 startDate;
@@ -16,6 +14,7 @@ contract Event is ERC721, Ownable {
         address[] invites;
         string description;
         address organizer;
+        uint256 eventId;
     }
 
     using Counters for Counters.Counter;
@@ -25,6 +24,9 @@ contract Event is ERC721, Ownable {
 
     constructor() ERC721("calendar.eth", "CALETH") {}
 
+    event EventCreated(EventData eventData);
+    event EventCancelled(uint256 eventId);
+
     function createEvent(
         uint256 startDate,
         uint256 endDate,
@@ -33,21 +35,25 @@ contract Event is ERC721, Ownable {
         address organizer
     ) public onlyOwner returns (uint256) {
         uint256 newItemId = _tokenIds.current();
-        _safeMint(msg.sender, newItemId);   
-        eventsData[newItemId] = EventData(
+        _safeMint(msg.sender, newItemId);
+        EventData memory eventData = EventData(
             startDate,
             endDate,
             invites,
             description,
-            organizer
+            organizer,
+            newItemId
         );
+        eventsData[newItemId] = eventData;
         _tokenIds.increment();
+        emit EventCreated(eventData);
         return newItemId;
     }
 
     function cancelEvent(uint256 eventId) public onlyOwner returns (bool) {
         delete eventsData[eventId];
         _burn(eventId);
+        emit EventCancelled(eventId);
         return true;
     }
 

@@ -7,9 +7,23 @@ import { useEffect, useState } from "react";
 import { calendarManager, events } from "./constants.js";
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+function cleanEvent(scEvent) {
+  return {
+    id: scEvent.eventId.toNumber(),
+    start: new Date(scEvent.startDate.toNumber()),
+    end: new Date(scEvent.endDate.toNumber()),
+    invitees: scEvent.invites,
+    description: scEvent.description,
+    title: scEvent.description,
+    organizer: scEvent.organizer,
+    allDay: false,
+  }
+}
+
 function App() {
   const [currentAccount, setCurrentAccount] = useState("");
-  const [allEvents, setAllEvents] = useState();
+  const [userEvents, setUserEvents] = useState();
+  let userEventSuscription;
 
   const signer = function () {
     const { ethereum } = window;
@@ -33,6 +47,12 @@ function App() {
     signer
   );
 
+  const addUserEvent = (event) => {
+    setUserEvents
+
+      ((prevValue) => prevValue.concat([event]));
+  }
+
   const checkIfWalletIsConnected = async () => {
     try {
       const { ethereum } = window;
@@ -51,7 +71,7 @@ function App() {
       if (accounts.length !== 0) {
         const account = accounts[0];
         console.log("Found an authorized account:", account);
-        setCurrentAccount(account);
+        setCurrentAccount(ethers.utils.getAddress(account));
       } else {
         console.log("No authorized account found");
       }
@@ -60,55 +80,48 @@ function App() {
     }
   };
 
-  const connectWallet = async () => {
-    try {
-      const { ethereum } = window;
-
-      if (!ethereum) {
-        alert("Get MetaMask!");
-        return;
-      }
-
-      const accounts = await ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      console.log("Connected", accounts[0]);
-      setCurrentAccount(accounts[0]);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const cleanEvent = (scEvent) => {
-    return {
-      start: new Date(scEvent.startDate.toNumber()),
-      end: new Date(scEvent.endDate.toNumber()),
-      invitees: scEvent.invites,
-      description: scEvent.description,
-      title: scEvent.description,
-      organizer: scEvent.organizer,
-      allDay: false,
-    }
-  }
+  const isUserEvent = (event, userAddress) => event.organizer == userAddress || event.invitees.includes(userAddress);
 
   const getAllEvents = async () => {
     const events = await eventsContract.getAllEvents();
-    setAllEvents(events.map(ev => cleanEvent(ev)));
+    const eventsCleaned = events.map(ev => cleanEvent(ev));
+    setUserEvents(eventsCleaned.filter(ev => isUserEvent(ev, currentAccount)))
   };
+
+  const suscribeToNewEvents = async () => {
+    userEventSuscription = eventsContract.on("EventCreated", (eventData) => {
+      const eventCleaned = cleanEvent(eventData);
+      if (isUserEvent(eventCleaned, currentAccount) && userEvents.every((ev) => ev.id !== eventCleaned.id)) {
+        addUserEvent(eventCleaned);
+      }
+    });
+  }
 
   useEffect(() => {
     checkIfWalletIsConnected();
-    getAllEvents();
   }, []);
+
+  useEffect(() => {
+    if (currentAccount) {
+      getAllEvents();
+    }
+  }, [currentAccount])
+
+  useEffect(() => {
+    if (userEvents && !userEventSuscription) {
+      suscribeToNewEvents();
+    }
+  }, [userEvents, userEventSuscription])
 
   return (
     <div className="App">
       <header className="App-header"><span>Calendar.ETH</span><span>{signer.address}</span></header>
       <CalendarETH
-        events={allEvents}
+        events={userEvents}
         eventsContract={eventsContract}
-        calendarManagerContract={calendarManagerContract} />
+        calendarManagerContract={calendarManagerContract}
+        currentAccount={currentAccount}
+      />
     </div>
   );
 }

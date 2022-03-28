@@ -4,13 +4,19 @@ import { useState } from "react";
 import Button from 'react-bootstrap/Button';
 import { Form, FormControl, InputGroup } from "react-bootstrap";
 import { ethers } from "ethers";
+import DateTimePicker from 'react-datetime-picker';
 
-function CalendarETH({ events, eventsContract, calendarManagerContract }) {
+function CalendarETH({ events, eventsContract, calendarManagerContract, currentAccount }) {
   const localizer = momentLocalizer(moment);
   const [allowInviteAddress, setAllowInviteAddress] = useState("");
   const [invitees, setInvitees] = useState([]);
   const [currentInvitee, setCurrentInvitee] = useState([]);
   const [eventDescription, setEventDescription] = useState("");
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+
+  const ownedEvents = events ? events.filter((ev) => ev.organizer === currentAccount) : [];
+  const [selectedEventToCancel, setSelectedEventToCancel] = useState();
 
   const addInvitee = () => {
     try {
@@ -32,7 +38,7 @@ function CalendarETH({ events, eventsContract, calendarManagerContract }) {
 
   const allowInvitesFrom = async (from) => {
     try {
-      ethers.utils.getAddress(currentInvitee);
+      ethers.utils.getAddress(allowInviteAddress);
       await calendarManagerContract.allowInvites(from)
     } catch (e) {
       //Make this a pretty error
@@ -41,7 +47,12 @@ function CalendarETH({ events, eventsContract, calendarManagerContract }) {
   }
 
   const createEvent = async (invitees, startDate, endDate, description) => {
-    await calendarManagerContract.createEvent(invitees, new Date().getTime(), new Date().getTime(), description)
+    await calendarManagerContract.createEvent(invitees, startDate.getTime(), endDate.getTime(), description)
+  }
+
+  const cancelEvent = async (eventId) => {
+    const eventIdToDelete = eventId || ownedEvents[0].id;
+    await calendarManagerContract.cancelEvent(ethers.BigNumber.from(eventIdToDelete));
   }
 
   return (
@@ -58,7 +69,7 @@ function CalendarETH({ events, eventsContract, calendarManagerContract }) {
         <div className="content">
           <InputGroup>
             <FormControl placeholder="Insert address (0x)" value={allowInviteAddress} onChange={(e) => setAllowInviteAddress(e.target.value)} />
-            <Button variant="primary" onClick={() => allowInvitesFrom(allowInviteAddress)}>
+            <Button style={{zIndex: "0"}} variant="primary" onClick={() => allowInvitesFrom(allowInviteAddress)}>
               Allow invites from address
             </Button>
           </InputGroup>
@@ -67,7 +78,10 @@ function CalendarETH({ events, eventsContract, calendarManagerContract }) {
       <div className="create-event action-card">
         <p className="mb-3">Create invite</p>
         <div className="content">
-          <Form className="text-start">
+          <Form className="text-start" onSubmit={(e) => {
+            e.preventDefault();
+            createEvent(invitees, startDate, endDate, eventDescription)
+          }}>
 
             <Form.Group className="mb-3">
               <Form.Label>Event description</Form.Label>
@@ -75,6 +89,22 @@ function CalendarETH({ events, eventsContract, calendarManagerContract }) {
                 value={eventDescription}
                 onChange={(e) => setEventDescription(e.target.value)} />
             </Form.Group>
+
+            <div style={{display: "flow-root"}}>
+              <Form.Group className="mb-3 float-start">
+                <Form.Label>Start date</Form.Label>
+                <div>
+                  <DateTimePicker minDate={new Date()} onChange={setStartDate} value={startDate} />
+                </div>
+              </Form.Group>
+
+              <Form.Group className="mb-3 float-end">
+                <Form.Label>End date</Form.Label>
+                <div>
+                  <DateTimePicker minDate={startDate} onChange={setEndDate} value={endDate} />
+                </div>
+              </Form.Group>
+            </div>
 
             <Form.Group>
               <Form.Label>Invitees</Form.Label>
@@ -95,12 +125,23 @@ function CalendarETH({ events, eventsContract, calendarManagerContract }) {
                 </div>
               )}
             </Form.Group>
+            <Button variant="primary" type="submit">
+              Create event
+            </Button>
           </Form>
-
-
-          <Button variant="primary" onClick={() => createEvent(invitees, 0, 0, eventDescription)}>
-            Create event
-          </Button>
+        </div>
+      </div>
+      <div className="cancel-event action-card">
+        <p className="mb-3">Cancel event you own</p>
+        <div className="content">
+          <InputGroup>
+            <Form.Select onChange={(e) => setSelectedEventToCancel(e.target.value)}>
+              {ownedEvents && ownedEvents.map((ev) => <option value={ev.id}>{ev.description}</option>)}
+            </Form.Select>
+            <Button disabled={!ownedEvents.length} variant="primary" onClick={() => cancelEvent(selectedEventToCancel)}>
+              Cancel event
+            </Button>
+          </InputGroup>
         </div>
       </div>
     </div >

@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/tobias/Documents/cornelius/calendar.eth/src/solidity/contracts/CalendarManager.sol": {
-      "lastModificationDate": 1648130622758,
-      "contentHash": "da8e0b474531b6b4ce9d9e5f15bc7430",
+      "lastModificationDate": 1648452735467,
+      "contentHash": "a0cedfcb92b160401f5a92a35b78692a",
       "sourceName": "contracts/CalendarManager.sol",
       "solcConfig": {
         "version": "0.8.4",
@@ -77,8 +77,8 @@
       ]
     },
     "/home/tobias/Documents/cornelius/calendar.eth/src/solidity/contracts/Event.sol": {
-      "lastModificationDate": 1648189504250,
-      "contentHash": "b146babeec69d2f2d954f12532611070",
+      "lastModificationDate": 1648452823663,
+      "contentHash": "dc7b6b5e2f7131a07fcf54e840eb9168",
       "sourceName": "contracts/Event.sol",
       "solcConfig": {
         "version": "0.8.4",

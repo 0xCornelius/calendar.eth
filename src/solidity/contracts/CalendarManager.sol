@@ -13,8 +13,6 @@ contract CalendarManager is IERC721Receiver {
     mapping(address => EnumerableSet.AddressSet) allowances;
     event InvitesAllowed(address indexed by, address indexed from);
     event InvitesDisabled(address indexed by, address indexed from);
-    event EventCreated(uint256 eventId);
-    event EventCancelled(uint256 eventId);
 
     constructor(Event _eventContract) {
         eventContract = _eventContract;
@@ -55,7 +53,6 @@ contract CalendarManager is IERC721Receiver {
             description,
             msg.sender
         );
-        emit EventCreated(eventId);
         return eventId;
     }
 
@@ -65,7 +62,6 @@ contract CalendarManager is IERC721Receiver {
         returns (bool)
     {
         bool canceled = eventContract.cancelEvent(eventId);
-        emit EventCancelled(eventId);
         return canceled;
     }
 
